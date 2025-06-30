@@ -1,0 +1,11 @@
+# Cheat
+Trigger:      # The alias or key combination that activates the function (e.g., Ctrl + R, Prefix + c)
+Type:         # The mechanism type, such as 'bindkey' (Zsh/Tmux), 'alias', or 'function'
+Domain:       # The environment or context where the shortcut applies (e.g., shell, tmux, fzf)
+Conditional:  # yes/no – whether the shortcut is only available in specific conditions (e.g., empty prompt, special mode)
+Alternative:  # Alternative method to achieve the same action (e.g., 'clear' command as alternative to Ctrl+L)
+Function:     # The actual command, function, or internal behavior invoked (e.g., 'clear', 'split-window -v', or 'yank')
+Description:  # A detailed human-readable explanation of what the shortcut does
+Example:      # A real-world usage example showing before and after the shortcut is used
+Short:        # A short (≤30 characters) summary of what the shortcut does
+Executable:   # yes/no – whether the Function can be typed directly into the terminal and perform the same behavior
