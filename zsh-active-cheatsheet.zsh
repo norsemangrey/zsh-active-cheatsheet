@@ -15,7 +15,18 @@ fzf_show_cheats() {
       --prompt="Browse Cheats > " \
       --delimiter='\t' \
       --query="$initial_query" \
-      --with-nth=1,2,3,4,5 --header-lines=1 --preview-window=right:40%:wrap --preview "
+      --with-nth=1,2,3,4,5 --header-lines=1 --preview-window=right:40%:wrap \
+      --bind 'ctrl-e:execute-silent(
+        id=$(echo {} | awk "{print \$1}")
+        location=$(jq -r --arg id "$id" "select(.ID == \$id) | .Location // empty" '"$data_jsonl"')
+        if [[ -n "$location" && -f "$location" ]]; then
+          exec < /dev/tty
+          exec > /dev/tty
+          '"${EDITOR:-nano}"' "$location"
+        fi
+      )' \
+      --header "Enter: Execute | Ctrl+E: Edit source file" \
+      --preview "
         id=\$(echo {} | awk '{print \$1}')
         line=\$(grep -F -m1 \"\\\"ID\\\":\\\"\$id\\\"\" $data_jsonl)
         if [[ -n \$line ]]; then
@@ -52,7 +63,8 @@ fzf_show_cheats() {
         fi
       " < "$data_tsv")
 
-  #rm -f "$data_tsv"
+  # Clean up temporary files
+  rm -f "$data_tsv"
   [[ -z "$selected_row" ]] && return 0
 
   # Extract just the trigger from the selected row
@@ -63,19 +75,50 @@ fzf_show_cheats() {
   command=$(jq -r --arg id "$selected_id" 'select(.ID == $id) | .Function // empty' "$data_jsonl")
   domain=$(jq -r --arg id "$selected_id" 'select(.ID == $id) | .Domain // empty' "$data_jsonl")
 
+  # Check if command is valid before processing
+  if [[ -z "$command" || "$command" == "null" ]]; then
+    zle -M "No command found for '$selected_id'"
+    return 1
+  fi
+
+  # Clean the command string - remove any newlines or extra whitespace
+  command=$(printf '%s' "$command" | tr -d '\n\r' | sed 's/[[:space:]]\+/ /g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
   # Prefix with tmux if Domain is tmux
   if [[ "$domain" == "tmux" ]]; then
     command="tmux $command"
   fi
 
-  if [[ -n "$command" ]]; then
-    LBUFFER="$command"
+  # Validate command is not empty after cleaning
+  if [[ -z "$command" ]]; then
+    zle -M "Command is empty after processing"
+    return 1
+  fi
 
-    # Accept the line to execute the command
-    zle accept-line
+  # Check if command contains <string> pattern
+  if [[ "$command" =~ '<[^>]+>' ]]; then
+    # Command has placeholder - set up for editing
+
+    # Find the first < character
+    local before_pattern="${command%%<*}"
+
+    # Find everything after the first >
+    local after_pattern="${command#*>}"
+
+    # Calculate cursor position
+    local cursor_pos=${#before_pattern}
+
+    # Combine before and after
+    local cleaned_command="${before_pattern}${after_pattern}"
+
+    # Set the command line
+    LBUFFER="$cleaned_command"
+    CURSOR=$cursor_pos
 
   else
-    zle -M "No command found for '$selected_id'"
+    # No placeholder - execute immediately
+    LBUFFER="$command"
+    zle accept-line
   fi
 }
 
