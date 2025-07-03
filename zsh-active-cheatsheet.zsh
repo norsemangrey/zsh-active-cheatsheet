@@ -36,7 +36,7 @@ fzf_show_cheats() {
     --delimiter='\t' \
     --query="$initial_query" \
     --with-nth=1,2,3,4,5 --header-lines=1 \
-    --preview-window=right:40%:wrap \
+    --header "Enter: Execute (if executable) | Ctrl+E: Edit (in editor)" \
     --bind 'ctrl-e:execute-silent(
       id=$(echo {} | awk "{print \$1}")
       location=$(jq -r --arg id "$id" "select(.ID == \$id) | .Location // empty" '"$data_jsonl"')
@@ -46,7 +46,7 @@ fzf_show_cheats() {
         '"${EDITOR:-nano}"' "$location"
       fi
     )' \
-    --header "Enter: Execute | Ctrl+E: Edit source file" \
+    --preview-window=right:40%:wrap \
     --preview "
 
       id=\$(echo {} | awk '{print \$1}')
@@ -101,16 +101,16 @@ fzf_show_cheats() {
 
           echo -e \"\\033[1;34mExample:\\033[0m\"
           echo \"\$example\"
-          echo
 
         fi
 
         # Display separator
 
         width=\$(printf '%s' \"\$FZF_PREVIEW_COLUMNS\" | grep -E '^[0-9]+$' || tput cols 2>/dev/null || stty size 2>/dev/null | cut -d' ' -f2 || echo 80)
-        for ((i=0; i<width; i++)); do printf '─'; done
+        echo -e \"\\033[1;37m\"
+        for ((i=0; i<width; i++)); do printf '─'; done  # Thicker line
+        echo -e \"\\033[0m\"
 
-        echo
         echo
 
         # Display function with syntax highlighting
@@ -134,7 +134,10 @@ fzf_show_cheats() {
 
   # Extract selected command data
   selected_id=$(echo "$selected_row" | awk '{print $1}')
+
   local command domain executable
+
+  # Fetch command, domain, and executable status from JSONL
   command=$(jq -r --arg id "$selected_id" 'select(.ID == $id) | .Function // empty' "$data_jsonl")
   domain=$(jq -r --arg id "$selected_id" 'select(.ID == $id) | .Domain // empty' "$data_jsonl")
   executable=$(jq -r --arg id "$selected_id" 'select(.ID == $id) | .Executable // "yes"' "$data_jsonl")
