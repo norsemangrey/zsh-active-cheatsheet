@@ -9,6 +9,8 @@
 # - Auto-prefix tmux commands
 # - Smart cursor positioning for placeholder replacement
 
+#TODO: Handle cheats selection with no command (issue warning and do not execute/exit)
+
 fzf_show_cheats() {
 
   # File paths and initialization
@@ -126,11 +128,11 @@ fzf_show_cheats() {
     " \
     < "$data_tsv")
 
-  # Cleanup and validation
+  # Remove temporary TSV file
   rm -f "$data_tsv"
 
-
-  [[ -z "$selected_row" ]] && return 0 # Exit if no selection made
+  # Exit if no selection made
+  [[ -z "$selected_row" ]] && return 0
 
   # Extract selected command data
   selected_id=$(echo "$selected_row" | awk '{print $1}')
@@ -142,82 +144,122 @@ fzf_show_cheats() {
   domain=$(jq -r --arg id "$selected_id" 'select(.ID == $id) | .Domain // empty' "$data_jsonl")
   executable=$(jq -r --arg id "$selected_id" 'select(.ID == $id) | .Executable // "yes"' "$data_jsonl")
 
-  # Validate command exists
+  # Validate command exists (not null or empty)
   if [[ -z "$command" || "$command" == "null" ]]; then
+
     zle -M "No command found for '$selected_id'"
+
     return 1
+
   fi
 
   # Check if command is executable - silently return if not
   if [[ "$executable" != "yes" ]]; then
+
     return 0
+
   fi
 
   # Clean and prepare command
   command=$(clean_command "$command")
-  command=$(add_domain_prefix "$command" "$domain")
+  command=$(add_command_domain_prefix "$command" "$domain")
 
-  # Final validation
+  # Final validation (ensure command is not empty)
   if [[ -z "$command" ]]; then
+
     zle -M "Command is empty after processing"
+
     return 1
+
   fi
 
   # Execute or prepare command based on placeholder presence
   if command_has_placeholder "$command"; then
+
     setup_command_for_editing "$command"
+
   else
+
     execute_command_immediately "$command"
+
   fi
+
 }
 
 # Clean command string of unwanted whitespace and characters
 clean_command() {
-  local cmd="$1"
-  printf '%s' "$cmd" | tr -d '\n\r' | sed 's/[[:space:]]\+/ /g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+
+  local command="$1"
+
+  # Remove unwanted characters and normalize whitespace
+  printf '%s' "$command" | tr -d '\n\r' | sed 's/[[:space:]]\+/ /g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+
 }
 
 # Add domain-specific prefixes (e.g., tmux commands)
-add_domain_prefix() {
-  local cmd="$1"
+add_command_domain_prefix() {
+
+  local command="$1"
   local domain="$2"
 
+  # Check if domain is tmux and prefix command accordingly
   if [[ "$domain" == "tmux" ]]; then
-    echo "tmux $cmd"
+
+    echo "tmux $command"
+
   else
-    echo "$cmd"
+
+    echo "$command"
+
   fi
+
 }
 
 # Check if command contains placeholder patterns like <string>
 command_has_placeholder() {
-  local cmd="$1"
-  [[ "$cmd" =~ '<[^>]+>' ]]
+
+  local command="$1"
+
+  # Check for placeholder patterns like <string>
+  [[ "$command" =~ '<[^>]+>' ]]
+
 }
 
 # Setup command for interactive editing (remove placeholder, position cursor)
 setup_command_for_editing() {
-  local cmd="$1"
+
+  local command="$1"
 
   # Parse placeholder position
-  local before_pattern="${cmd%%<*}"
-  local after_pattern="${cmd#*>}"
-  local cursor_pos=${#before_pattern}
+  local before_pattern="${command%%<*}"
+  local after_pattern="${command#*>}"
+  local cursor_position=${#before_pattern}
   local cleaned_command="${before_pattern}${after_pattern}"
 
   # Set command line with cursor positioned at placeholder location
   LBUFFER="$cleaned_command"
-  CURSOR=$cursor_pos
+  CURSOR=$cursor_position
+
 }
 
 # Execute command immediately without user interaction
 execute_command_immediately() {
-  local cmd="$1"
-  LBUFFER="$cmd"
+
+  local command="$1"
+
+  # Set the command to the left buffer
+  LBUFFER="$command"
+
+  # Execute the command immediately
   zle accept-line
+
 }
 
-# ZLE setup and key binding
-stty -ixon                              # Disable Ctrl+S flow control
-zle -N fzf_show_cheats                  # Register ZLE widget
-bindkey '^S' fzf_show_cheats            # Bind to Ctrl+S
+# Disable Ctrl+S flow control (allow us to bind Cntr + S)
+stty -ixon
+
+# Register function as ZLE widget
+zle -N fzf_show_cheats
+
+# Bind function to Ctrl+S
+bindkey '^S' fzf_show_cheats
