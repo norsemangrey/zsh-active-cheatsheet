@@ -255,7 +255,7 @@ execute_command_immediately() {
 
 }
 
-# Disable Ctrl+S flow control (allow us to bind Cntr + S)
+# Disable Ctrl+S flow control (allow us to bind Ctrl + S)
 stty -ixon
 
 # Register function as ZLE widget

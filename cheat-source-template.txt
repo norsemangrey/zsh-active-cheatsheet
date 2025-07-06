@@ -15,14 +15,14 @@ Example      # A real-world usage example showing before and after the shortcut 
 # Cheat block with commented properties
 
 # Cheat
-# Trigger      
-# Type         
-# Domain       
-# Conditional  
-# Alternative  
-# Function     
-# Executable   
-# Description  
-# Short 
-# Example      
-       
+# Trigger
+# Type
+# Domain
+# Conditional
+# Alternative
+# Function
+# Executable
+# Description
+# Short
+# Example
+

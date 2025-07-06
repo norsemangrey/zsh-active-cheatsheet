@@ -3,61 +3,197 @@
 # Enable strict error handling
 set -euo pipefail
 
-# Debug configuration - set to 1 to enable debugging
+# Debug configuration - controlled by --debug flag
+DEBUG=0
+
 debug() {
-  if [[ ${DEBUG:-0} -eq 1 ]]; then
+  if [[ $DEBUG -eq 1 ]]; then
     echo "[DEBUG] $*" >&2
+  fi
+}
+
+# Check if running from plugin context (suppress some output)
+PLUGIN_MODE=0
+if [[ "${1:-}" == "--plugin-mode" ]]; then
+  PLUGIN_MODE=1
+  shift
+fi
+
+# Function for conditional output based on plugin mode
+plugin_echo() {
+  if [[ $PLUGIN_MODE -eq 0 ]]; then
+    echo "$@" >&2
   fi
 }
 
 # Function to display usage information
 usage() {
-  echo "Usage: $0 [directory1] [directory2] ..."
+  echo "Usage: $0 [OPTIONS] [directory1] [directory2] ..."
   echo ""
   echo "Scan directories for cheat files and generate metadata."
   echo ""
+  echo "Options:"
+  echo "  -i, --ignore STRING    Add string to ignore list (can be used multiple times)"
+  echo "  -d, --debug            Enable debug output"
+  echo "  -h, --help             Show this help message"
+  echo "  --plugin-mode          Run in plugin mode (suppress non-error output)"
+  echo ""
   echo "Arguments:"
-  echo "  directory    Directory to scan for cheat files (can specify multiple)"
+  echo "  directory              Directory to scan for cheat files (can specify multiple)"
+  echo ""
+  echo "Default ignore patterns:"
+  echo "  .git, .svn, node_modules, cache, plugins, .cache, backup, backups,"
+  echo "  tmp, temp, .tmp, logs, log, .DS_Store, Thumbs.db, vendor, build,"
+  echo "  dist, target, .vscode, .idea"
   echo ""
   echo "If no directories are provided, defaults to:"
-  echo "  $HOME/.config/aliases"
-  echo "  $HOME/.config/cheats"
-  echo ""
-  echo "Environment variables:"
-  echo "  DEBUG=1      Enable debug output"
+  echo "  \$HOME/.config/aliases"
+  echo "  \$HOME/.config/cheats"
   echo ""
   echo "Examples:"
-  echo "  $0                                    # Use default directories"
+  echo "  $0                                    # Use defaults"
   echo "  $0 /path/to/cheats                   # Scan single directory"
-  echo "  $0 /path/to/cheats /path/to/aliases  # Scan multiple directories"
-  echo "  DEBUG=1 $0 /custom/path              # Enable debug output"
+  echo "  $0 -i custom_ignore                  # Add custom ignore pattern"
+  echo "  $0 --debug --ignore test /path1      # Debug mode with additional ignore"
 }
 
-# Check for help flag
-if [[ ${1:-} == "-h" || ${1:-} == "--help" ]]; then
-  usage
-  exit 0
-fi
+# Initialize arrays with default ignore strings
+declare -a ignore_strings=(
+  "git"
+  "cache"
+  "plugins"
+  "backup"
+  "log"
+)
 
-# Set directories to scan based on command-line arguments or defaults
-if [[ $# -gt 0 ]]; then
+# Declare directories array
+declare -a directories_to_scan=()
 
-  # Use command-line arguments
-  directories_to_scan=("$@")
+# Parse command-line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -d|--debug)
+      DEBUG=1
+      shift
+      ;;
+    -i|--ignore)
+      if [[ -n "${2:-}" ]]; then
+        ignore_strings+=("$2")
+        shift 2
+      else
+        echo "Error: --ignore requires a string argument" >&2
+        exit 1
+      fi
+      ;;
+    --plugin-mode)
+      # Already handled at the top, just consume the argument
+      shift
+      ;;
+    -*)
+      echo "Error: Unknown option $1" >&2
+      usage >&2
+      exit 1
+      ;;
+    *)
+      # This is a directory argument
+      directories_to_scan+=("$1")
+      shift
+      ;;
+  esac
+done
 
-  echo "Using provided directories: ${directories_to_scan[*]}" >&2
+# Set default directories if none provided
+if [[ ${#directories_to_scan[@]} -eq 0 ]]; then
 
-else
-
-  # Use default directories
+  # Default directories to scan
   directories_to_scan=(
     "$HOME/.config/aliases"
     "$HOME/.config/cheats"
   )
-
-  echo "Using default directories: ${directories_to_scan[*]}" >&2
-
+  plugin_echo "Using default directories: ${directories_to_scan[*]}"
+else
+  plugin_echo "Using provided directories: ${directories_to_scan[*]}"
 fi
+
+# Display ignore strings if any (including defaults)
+if [[ ${#ignore_strings[@]} -gt 0 ]]; then
+  plugin_echo "Will skip paths containing: ${ignore_strings[*]}"
+fi
+
+# Simple function to check if a path should be ignored
+should_ignore_path() {
+
+  local path="$1"
+
+  # Check each ignore string
+  for ignore_string in "${ignore_strings[@]}"; do
+
+    # Check if the path contains the ignore string
+    if [[ "$path" == *"$ignore_string"* ]]; then
+
+      debug "Skipping path containing '$ignore_string': $path"
+
+      return 0
+
+    fi
+
+  done
+
+  return 1
+
+}
+
+# Enhanced validate_directories function
+validate_directories() {
+
+  local valid_directories=()
+
+  # Iterate over each directory to validate
+  for directory in "${directories_to_scan[@]}"; do
+
+    # Check if the directory exists
+    if [[ -d "$directory" ]]; then
+
+      # Check if the directory is not ignored
+      if should_ignore_path "$directory"; then
+
+        echo "Ignoring directory: $directory" >&2
+
+        continue
+
+      fi
+
+      # Add to valid directories
+      valid_directories+=("$directory")
+
+      echo "Valid directory found: $directory" >&2
+
+    else
+
+      echo "Warning: Skipping non-existent directory: $directory" >&2
+
+    fi
+
+  done
+
+  if [[ ${#valid_directories[@]} -eq 0 ]]; then
+
+    echo "Error: No valid directories found to scan" >&2
+
+    exit 1
+
+  fi
+
+  # Update the global directories to scan with valid directories
+  directories_to_scan=("${valid_directories[@]}")
+
+  echo "Total valid directories: ${#directories_to_scan[@]}" >&2
+
+}
 
 # Output file for metadata
 output_file="$HOME/.cache/cheats-metadata.jsonl"
@@ -66,34 +202,11 @@ output_file="$HOME/.cache/cheats-metadata.jsonl"
 debug "Output file: $output_file"
 debug "Directories to scan: ${directories_to_scan[*]}"
 
+# Initialize counter for generating unique IDs
+counter=1
+
 # Validate directories upfront
-validate_directories() {
-  # Array to hold valid directories
-  local valid_directories=()
-
-  # Iterate over each directory to check if it exists
-  for directory in "${directories_to_scan[@]}"; do
-    # Check if the directory exists
-    if [[ -d "$directory" ]]; then
-      # Add directory to valid directories
-      valid_directories+=("$directory")
-      echo "Valid directory found: $directory" >&2
-    else
-      echo "Warning: Skipping non-existent directory: $directory" >&2
-    fi
-  done
-
-  # Check if we have any valid directories
-  if [[ ${#valid_directories[@]} -eq 0 ]]; then
-    echo "Error: No valid directories found to scan" >&2
-    echo "Provided directories: ${directories_to_scan[*]}" >&2
-    exit 1
-  fi
-
-  # Update the global variable
-  directories_to_scan=("${valid_directories[@]}")
-  echo "Total valid directories: ${#directories_to_scan[@]}" >&2
-}
+validate_directories
 
 # Metadata fields (ID and Location are automatically generated)
 readonly fields=(
@@ -409,33 +522,72 @@ emit_json() {
 
 }
 
-# Validate directories before processing
-validate_directories
-
-# Initialize the cheat counter
-counter=1
-
-debug "Starting processing with counter: $counter"
-
 # Iterate over each directory to scan
 for directory in "${directories_to_scan[@]}"; do
 
   debug "Scanning directory: $directory"
 
-  # Iterate over each file in the directory
+  # Build find command with ignore patterns using -prune for better performance
+  find_command="find -L \"$directory\""
+
+  # Add prune conditions for ignore patterns if any exist
+  if [[ ${#ignore_strings[@]} -gt 0 ]]; then
+
+    # Start a new condition group
+    find_command+=" \\("
+
+    # Add each ignore pattern as a -path condition
+    for i in "${!ignore_strings[@]}"; do
+
+      # Check if this is the first ignore string
+      if [[ $i -gt 0 ]]; then
+
+        # Add -o (OR) operator for subsequent ignore patterns
+        find_command+=" -o"
+
+      fi
+
+      # Add the -path condition for the current ignore string
+      find_command+=" -path \"*${ignore_strings[i]}*\""
+
+    done
+
+    # Close the ignore condition group
+    find_command+=" \\) -prune -o"
+
+  fi
+
+  # Add the final condition to find regular files
+  find_command+=" -type f -print"
+
+  #debug "Find command: $find_command"
+
+  # Execute the find command and iterate over each file
   while read -r current_file; do
 
-    debug "Processing file: $current_file"
+    # Skip empty lines
+    [[ -z "$current_file" ]] && continue
+
+    # Check if file is readable
+    if [[ ! -r "$current_file" ]]; then
+
+      #debug "Skipping unreadable file: $current_file"
+
+      continue
+
+    fi
+
+    #debug "Processing file: $current_file"
 
     # Initialize the cheat block flag
     inside_block=0
 
-    debug "Reset inside_block to 0 for new file"
+    #debug "Reset inside_block to 0 for new file"
 
     # Read the file line by line (use -r to handle backslashes correctly)
     while IFS= read -r line || [[ -n $line ]]; do
 
-      debug "Reading line: '$line'"
+      #debug "Reading line: '$line'"
 
       # Process the current line
       process_line "$line"
@@ -445,16 +597,16 @@ for directory in "${directories_to_scan[@]}"; do
     # Check if we reach the end of the file while inside a cheat block
     if [[ $inside_block -eq 1 ]]; then
 
-      debug "End of file reached while inside cheat block, finalizing"
+      #debug "End of file reached while inside cheat block, finalizing"
 
       # Finalize the current cheat block
       finalize_fields
 
     fi
 
-    debug "Finished processing file: $current_file"
+    #debug "Finished processing file: $current_file"
 
-  done < <(find -L "$directory" -type f) # Find all files in the directory
+  done < <(eval "$find_command")
 
   debug "Finished scanning directory: $directory"
 
