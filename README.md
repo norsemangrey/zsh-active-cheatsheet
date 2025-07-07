@@ -2,6 +2,8 @@
 
 Interactive cheat sheet browser for zsh using FZF. Press `Ctrl+S` to browse and execute commands from your personal cheat collection.
 
+![image](https://github.com/user-attachments/assets/3f717149-fe13-4740-b80f-84db5681bb21)
+
 ## Installation
 
 ### Manual Installation
