@@ -9,7 +9,6 @@ Interactive cheat sheet browser for zsh using FZF. Press `Ctrl+S` to browse and 
 - 🎨 **Syntax highlighting** - Configurable preview with bat/highlight support
 - 📁 **Auto-discovery** - Scans your configured directories automatically
 - 🔧 **Configurable** - Custom directories, ignore patterns, and highlighters
-- 🚀 **Zero overhead** - Silent background compilation, no startup delays
 
 ## Installation
 
