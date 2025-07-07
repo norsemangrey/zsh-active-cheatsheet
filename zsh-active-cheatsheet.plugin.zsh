@@ -50,15 +50,22 @@ if [[ "$ZSH_ACTIVE_CHEATSHEET_AUTO_COMPILE" == "true" ]]; then
             # Add directories to scan
             compiler_args+=("${ZSH_ACTIVE_CHEATSHEET_DIRS[@]}")
 
-            # Run compiler in background with proper output suppression
+            # Run compiler in background with proper job control
             if [[ "$ZSH_ACTIVE_CHEATSHEET_DEBUG" == "true" ]]; then
                 # In debug mode, show output but run in background
                 "$compiler" "${compiler_args[@]}" &
+                # Only disown if there's actually a job to disown
+                if (( $? == 0 )); then
+                    disown 2>/dev/null || true
+                fi
             else
                 # In normal mode, suppress ALL output (stdout and stderr)
                 "$compiler" "${compiler_args[@]}" >/dev/null 2>&1 &
+                # Only disown if there's actually a job to disown
+                if (( $? == 0 )); then
+                    disown 2>/dev/null || true
+                fi
             fi
-            disown  # Detach from shell job control
         else
             # Only show warning if debug is enabled
             if [[ "$ZSH_ACTIVE_CHEATSHEET_DEBUG" == "true" ]]; then
