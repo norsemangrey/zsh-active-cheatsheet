@@ -4,34 +4,29 @@ Interactive cheat sheet browser for zsh using FZF. Press `Ctrl+S` to browse and 
 
 ## Installation
 
+### Manual Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/norsemangrey/zsh-active-cheatsheet.git ~/.config/zsh/plugins/zsh-active-cheatsheet
+
+# 2. Configure (optional)
+export ZSH_ACTIVE_CHEATSHEET_DIRS=("$HOME/my-cheats")
+
+# 3. Source the PLUGIN file (not the core file)
+source ~/.config/zsh/plugins/zsh-active-cheatsheet/zsh-active-cheatsheet.plugin.zsh
+```
+
 ### Using Oh My Zsh
 
-1. Clone to your Oh My Zsh custom plugins directory:
 ```bash
-git clone https://github.com/yourusername/zsh-active-cheatsheet.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-active-cheatsheet
-```
+# 1. Clone to custom plugins
+git clone https://github.com/norsemangrey/zsh-active-cheatsheet.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-active-cheatsheet
 
-2. **Configure the plugin** (optional) in your `~/.zshrc` BEFORE the plugins line:
-```bash
-# Custom cheat directories
-export ZSH_ACTIVE_CHEATSHEET_DIRS=(
-    "$HOME/dotfiles/cheats"
-    "$HOME/work/documentation"
-    "$HOME/.config/aliases"
-)
+# 2. Configure in ~/.zshrc (before plugins line)
+export ZSH_ACTIVE_CHEATSHEET_DIRS=("$HOME/my-cheats")
 
-# Additional ignore patterns
-export ZSH_ACTIVE_CHEATSHEET_IGNORE=("secret" "private" ".env")
-
-# Disable auto-compilation on startup (run manually)
-export ZSH_ACTIVE_CHEATSHEET_AUTO_COMPILE=false
-
-# Enable debug mode
-export ZSH_ACTIVE_CHEATSHEET_DEBUG=true
-```
-
-3. Add to your plugins list in `~/.zshrc`:
-```bash
+# 3. Add to plugins
 plugins=(... zsh-active-cheatsheet)
 ```
 
@@ -41,20 +36,7 @@ plugins=(... zsh-active-cheatsheet)
 # Configure before loading (optional)
 export ZSH_ACTIVE_CHEATSHEET_DIRS=("$HOME/my-cheats" "$HOME/.config/aliases")
 
-zinit load "yourusername/zsh-active-cheatsheet"
-```
-
-### Manual Installation
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/yourusername/zsh-active-cheatsheet.git ~/.zsh-plugins/zsh-active-cheatsheet
-
-# 2. Configure in ~/.zshrc (optional)
-export ZSH_ACTIVE_CHEATSHEET_DIRS=("$HOME/my-cheats")
-
-# 3. Source the plugin
-source ~/.zsh-plugins/zsh-active-cheatsheet/zsh-active-cheatsheet.plugin.zsh
+zinit load "norsemangrey/zsh-active-cheatsheet"
 ```
 
 ## Configuration
@@ -116,6 +98,27 @@ Enable debug output during compilation:
 export ZSH_ACTIVE_CHEATSHEET_DEBUG=true
 ```
 
+#### `ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER`
+**Default**: `cat`
+
+Syntax highlighter for function preview in FZF:
+```bash
+# Use bat/batcat for syntax highlighting
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="bat --language=sh --style=plain --color=always"
+
+# Use batcat (Ubuntu/Debian package name)
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="batcat --language=sh --style=plain --color=always"
+
+# Use highlight
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="highlight --syntax=bash --out-format=ansi"
+
+# Use pygmentize
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="pygmentize -l bash"
+
+# Use plain cat (no syntax highlighting)
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="cat"
+```
+
 ### Configuration Examples
 
 #### Minimal Custom Setup
@@ -125,7 +128,7 @@ export ZSH_ACTIVE_CHEATSHEET_DIRS=("$HOME/my-cheats")
 plugins=(... zsh-active-cheatsheet)
 ```
 
-#### Advanced Custom Setup
+#### Advanced Custom Setup with Syntax Highlighting
 ```bash
 # ~/.zshrc
 export ZSH_ACTIVE_CHEATSHEET_DIRS=(
@@ -135,6 +138,7 @@ export ZSH_ACTIVE_CHEATSHEET_DIRS=(
 )
 export ZSH_ACTIVE_CHEATSHEET_IGNORE=("secrets" "draft" ".backup")
 export ZSH_ACTIVE_CHEATSHEET_DEBUG=true
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="bat --language=sh --style=plain --color=always"
 
 plugins=(... zsh-active-cheatsheet)
 ```
@@ -151,6 +155,28 @@ plugins=(... zsh-active-cheatsheet)
 # zsh-active-cheatsheet-compile
 ```
 
+#### Different Highlighter Options
+```bash
+# ~/.zshrc
+
+# Option 1: bat (if installed via Homebrew/most package managers)
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="bat --language=sh --style=plain --color=always"
+
+# Option 2: batcat (Ubuntu/Debian package name)
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="batcat --language=sh --style=plain --color=always"
+
+# Option 3: highlight package
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="highlight --syntax=bash --out-format=ansi --style=github"
+
+# Option 4: pygmentize (Python package)
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="pygmentize -l bash -f terminal"
+
+# Option 5: No highlighting (fastest)
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="cat"
+
+plugins=(... zsh-active-cheatsheet)
+```
+
 ## Usage
 
 ### Manual Compilation
@@ -161,7 +187,7 @@ When auto-compilation is disabled or you want to refresh:
 zsh-active-cheatsheet-compile
 
 # Or run compiler directly with custom options
-~/.zsh-plugins/zsh-active-cheatsheet/cheats-compiler.sh \
+~/.config/zsh/plugins/zsh-active-cheatsheet/cheats-compiler.sh \
     --ignore temp \
     /path/to/cheats1 \
     /path/to/cheats2
@@ -214,7 +240,20 @@ If no configuration is provided, the plugin uses these defaults:
 - **Directories**: `~/.config/aliases`, `~/.config/cheats`
 - **Auto-compile**: Enabled
 - **Debug**: Disabled
+- **Highlighter**: `cat` (no syntax highlighting)
 - **Ignore patterns**: Built-in defaults (`.git`, `node_modules`, etc.)
+
+## Dependencies
+
+### Required
+- `zsh`
+- `fzf` - For fuzzy finding interface
+- `jq` - For JSON processing
+
+### Optional
+- `bat` or `batcat` - For syntax highlighting (can be configured via `ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER`)
+- `highlight` - Alternative syntax highlighter
+- `pygmentize` - Another syntax highlighter option
 
 ## Troubleshooting
 
@@ -228,6 +267,9 @@ echo $ZSH_ACTIVE_CHEATSHEET_IGNORE
 
 # Check if auto-compile is enabled
 echo $ZSH_ACTIVE_CHEATSHEET_AUTO_COMPILE
+
+# Check highlighter
+echo $ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER
 ```
 
 ### Debug Compilation Issues
@@ -239,6 +281,18 @@ ZSH_ACTIVE_CHEATSHEET_DEBUG=true zsh-active-cheatsheet-compile
 for dir in "${ZSH_ACTIVE_CHEATSHEET_DIRS[@]}"; do
     echo "Directory: $dir (exists: $([ -d "$dir" ] && echo yes || echo no))"
 done
+```
+
+### Syntax Highlighting Issues
+```bash
+# Test if your highlighter works
+echo 'echo "test"' | $ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER
+
+# Check if bat/batcat is available
+which bat || which batcat || echo "bat not found"
+
+# Fallback to cat if issues
+export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="cat"
 ```
 
 ## License

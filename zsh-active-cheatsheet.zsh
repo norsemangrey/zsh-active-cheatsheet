@@ -31,6 +31,9 @@ fzf_show_cheats() {
   # FZF selected row and ID
   local selected_row selected_id
 
+  # Configure syntax highlighter (default to cat, allow override)
+  local syntax_highlighter="${ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER:-cat}"
+
   # FZF configuration and execution
   selected_row=$(fzf \
     --ansi --height=45% --reverse --info=inline \
@@ -115,9 +118,9 @@ fzf_show_cheats() {
 
         echo
 
-        # Display function with syntax highlighting
+        # Display function with configurable syntax highlighting
 
-        echo \"\$line\" | jq -r '.Function' | batcat --language=sh --style=plain --color=always
+        echo \"\$line\" | jq -r '.Function' | $syntax_highlighter
 
       else
 

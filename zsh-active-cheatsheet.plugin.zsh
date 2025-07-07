@@ -4,8 +4,8 @@
 # Provides interactive cheat sheet browser with Ctrl+S keybinding
 # Auto-compiles cheat metadata on ZSH startup
 
-# Get plugin directory
-local plugin_dir="${0:A:h}"
+# Get plugin directory and make it global for functions to use
+typeset -g ZSH_ACTIVE_CHEATSHEET_PLUGIN_DIR="${0:A:h}"
 
 # Ensure cache directory exists
 mkdir -p "$HOME/.cache"
@@ -25,10 +25,13 @@ typeset -ga ZSH_ACTIVE_CHEATSHEET_IGNORE
 # Debug mode
 : ${ZSH_ACTIVE_CHEATSHEET_DEBUG:=false}
 
+# Syntax highlighter for function preview (default: cat)
+: ${ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER:=cat}
+
 # Auto-compile cheats metadata on plugin load (if enabled)
 if [[ "$ZSH_ACTIVE_CHEATSHEET_AUTO_COMPILE" == "true" ]]; then
     () {
-        local compiler="$plugin_dir/cheats-compiler.sh"
+        local compiler="$ZSH_ACTIVE_CHEATSHEET_PLUGIN_DIR/cheats-compiler.sh"
 
         if [[ -x "$compiler" ]]; then
             # Build compiler arguments
@@ -61,11 +64,12 @@ if [[ "$ZSH_ACTIVE_CHEATSHEET_AUTO_COMPILE" == "true" ]]; then
 fi
 
 # Source the main functionality
-source "$plugin_dir/zsh-active-cheatsheet.zsh"
+source "$ZSH_ACTIVE_CHEATSHEET_PLUGIN_DIR/zsh-active-cheatsheet.zsh"
 
 # Utility function for manual compilation
 zsh-active-cheatsheet-compile() {
-    local compiler="${0:A:h}/cheats-compiler.sh"
+
+    local compiler="$ZSH_ACTIVE_CHEATSHEET_PLUGIN_DIR/cheats-compiler.sh"
 
     if [[ -x "$compiler" ]]; then
         local compiler_args=()
