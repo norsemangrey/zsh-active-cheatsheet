@@ -6,12 +6,6 @@ set -euo pipefail
 # Debug configuration - controlled by --debug flag
 DEBUG=0
 
-debug() {
-  if [[ $DEBUG -eq 1 ]]; then
-    echo "[DEBUG] $*" >&2
-  fi
-}
-
 # Check if running from plugin context (suppress some output)
 PLUGIN_MODE=0
 if [[ "${1:-}" == "--plugin-mode" ]]; then
@@ -19,10 +13,10 @@ if [[ "${1:-}" == "--plugin-mode" ]]; then
   shift
 fi
 
-# Function for conditional output based on plugin mode
-plugin_echo() {
-  if [[ $PLUGIN_MODE -eq 0 ]]; then
-    echo "$@" >&2
+# Debug function - only works outside plugin mode
+debug() {
+  if [[ $DEBUG -eq 1 && $PLUGIN_MODE -eq 0 ]]; then
+    echo "[DEBUG] $*" >&2
   fi
 }
 
@@ -108,91 +102,67 @@ done
 
 # Set default directories if none provided
 if [[ ${#directories_to_scan[@]} -eq 0 ]]; then
-
   # Default directories to scan
   directories_to_scan=(
     "$HOME/.config/aliases"
     "$HOME/.config/cheats"
   )
-  plugin_echo "Using default directories: ${directories_to_scan[*]}"
+  debug "Using default directories: ${directories_to_scan[*]}"
 else
-  plugin_echo "Using provided directories: ${directories_to_scan[*]}"
+  debug "Using provided directories: ${directories_to_scan[*]}"
 fi
 
 # Display ignore strings if any (including defaults)
 if [[ ${#ignore_strings[@]} -gt 0 ]]; then
-  plugin_echo "Will skip paths containing: ${ignore_strings[*]}"
+  debug "Will skip paths containing: ${ignore_strings[*]}"
 fi
 
 # Simple function to check if a path should be ignored
 should_ignore_path() {
-
   local path="$1"
 
   # Check each ignore string
   for ignore_string in "${ignore_strings[@]}"; do
-
     # Check if the path contains the ignore string
     if [[ "$path" == *"$ignore_string"* ]]; then
-
       debug "Skipping path containing '$ignore_string': $path"
-
       return 0
-
     fi
-
   done
 
   return 1
-
 }
 
 # Enhanced validate_directories function
 validate_directories() {
-
   local valid_directories=()
 
   # Iterate over each directory to validate
   for directory in "${directories_to_scan[@]}"; do
-
     # Check if the directory exists
     if [[ -d "$directory" ]]; then
-
       # Check if the directory is not ignored
       if should_ignore_path "$directory"; then
-
-        echo "Ignoring directory: $directory" >&2
-
+        debug "Ignoring directory: $directory"
         continue
-
       fi
 
       # Add to valid directories
       valid_directories+=("$directory")
-
-      echo "Valid directory found: $directory" >&2
-
+      debug "Valid directory found: $directory"
     else
-
-      echo "Warning: Skipping non-existent directory: $directory" >&2
-
+      debug "Warning: Skipping non-existent directory: $directory"
     fi
-
   done
 
   if [[ ${#valid_directories[@]} -eq 0 ]]; then
-
     echo "Error: No valid directories found to scan" >&2
-
     exit 1
-
   fi
 
   # Update the global directories to scan with valid directories
   directories_to_scan=("${valid_directories[@]}")
-
-  echo "Total valid directories: ${#directories_to_scan[@]}" >&2
-
+  debug "Total valid directories: ${#directories_to_scan[@]}"
 }
 
 # Output file for metadata
