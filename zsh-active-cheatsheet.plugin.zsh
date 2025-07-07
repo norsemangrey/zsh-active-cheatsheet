@@ -50,15 +50,20 @@ if [[ "$ZSH_ACTIVE_CHEATSHEET_AUTO_COMPILE" == "true" ]]; then
             # Add directories to scan
             compiler_args+=("${ZSH_ACTIVE_CHEATSHEET_DIRS[@]}")
 
-            # Run compiler in background with custom configuration
+            # Run compiler in background with proper output suppression
             if [[ "$ZSH_ACTIVE_CHEATSHEET_DEBUG" == "true" ]]; then
+                # In debug mode, show output but run in background
                 "$compiler" "${compiler_args[@]}" &
             else
-                "$compiler" "${compiler_args[@]}" 2>/dev/null &
+                # In normal mode, suppress ALL output (stdout and stderr)
+                "$compiler" "${compiler_args[@]}" >/dev/null 2>&1 &
             fi
             disown  # Detach from shell job control
         else
-            print "Warning: zsh-active-cheatsheet compiler not found or not executable at $compiler" >&2
+            # Only show warning if debug is enabled
+            if [[ "$ZSH_ACTIVE_CHEATSHEET_DEBUG" == "true" ]]; then
+                print "Warning: zsh-active-cheatsheet compiler not found or not executable at $compiler" >&2
+            fi
         fi
     } &!  # Run in background subshell
 fi
@@ -87,7 +92,7 @@ zsh-active-cheatsheet-compile() {
         # Add directories to scan
         compiler_args+=("${ZSH_ACTIVE_CHEATSHEET_DIRS[@]}")
 
-        # Run compiler with current configuration
+        # Run compiler with current configuration (show output for manual runs)
         "$compiler" "${compiler_args[@]}"
     else
         print "Error: Compiler not found at $compiler" >&2
@@ -97,6 +102,7 @@ zsh-active-cheatsheet-compile() {
 
 # Optional: Add plugin unload function
 zsh-active-cheatsheet-unload() {
+
     # Remove keybinding
     bindkey -r '^S'
 
