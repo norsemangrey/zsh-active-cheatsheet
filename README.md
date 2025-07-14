@@ -18,14 +18,14 @@ Interactive cheat sheet browser for zsh using FZF. Press `Ctrl+S` to browse and 
 # 1. Clone the repository
 git clone https://github.com/norsemangrey/zsh-active-cheatsheet.git ~/.config/zsh/plugins/zsh-active-cheatsheet
 
-# 2. Configure (optional)
+# 2. Configure (directories to scan, optional)
 export ZSH_ACTIVE_CHEATSHEET_DIRS=("$HOME/my-cheats")
 
-# 3. Source the PLUGIN file (not the core file)
+# 3. Source the plugin file (not the core file)
 source ~/.config/zsh/plugins/zsh-active-cheatsheet/zsh-active-cheatsheet.plugin.zsh
 ```
 
-### Using Oh My Zsh
+### Using Oh-My-Zsh
 
 ```bash
 # 1. Clone to custom plugins
@@ -42,12 +42,13 @@ plugins=(... zsh-active-cheatsheet)
 
 ### Environment Variables
 
-Configure the plugin by setting these variables in your `.zshrc` **before** loading the plugin:
+Configure the plugin by setting these variables in your `.zshenv` or `.zshrc` **before** loading the plugin:
 
 #### `ZSH_ACTIVE_CHEATSHEET_DIRS`
 **Default**: `("$HOME/.config/aliases" "$HOME/.config/cheats")`
 
 Directories to scan for cheat files:
+
 ```bash
 # Single directory
 export ZSH_ACTIVE_CHEATSHEET_DIRS=("$HOME/my-cheats")
@@ -55,34 +56,31 @@ export ZSH_ACTIVE_CHEATSHEET_DIRS=("$HOME/my-cheats")
 # Multiple directories
 export ZSH_ACTIVE_CHEATSHEET_DIRS=(
     "$HOME/dotfiles/cheats"
-    "$HOME/work/docs"
+    "$HOME/.config"
     "$HOME/.local/share/cheats"
-)
-
-# Include defaults + custom
-export ZSH_ACTIVE_CHEATSHEET_DIRS=(
-    "$HOME/.config/aliases"    # default
-    "$HOME/.config/cheats"     # default
-    "$HOME/my-custom-cheats"   # custom
 )
 ```
 
 #### `ZSH_ACTIVE_CHEATSHEET_IGNORE`
-**Default**: `()`
+**Default**: `("git", "cache", "plugins", "backup", "log")`
 
 Additional patterns to ignore (beyond built-in defaults):
-```bash
-# Ignore sensitive files
-export ZSH_ACTIVE_CHEATSHEET_IGNORE=("secret" "private" ".env")
 
+```bash
 # Ignore specific directories
-export ZSH_ACTIVE_CHEATSHEET_IGNORE=("old" "archive" "deprecated")
+export ZSH_ACTIVE_CHEATSHEET_IGNORE=(
+    "node_modules"
+    "dist"
+    "backup"
+    "git"
+)
 ```
 
 #### `ZSH_ACTIVE_CHEATSHEET_AUTO_COMPILE`
 **Default**: `true`
 
-Enable/disable automatic compilation on zsh startup:
+Enable/disable automatic compilation (scanning directories and building the common cheats file) on ZSH startup:
+
 ```bash
 # Disable auto-compilation (compile manually)
 export ZSH_ACTIVE_CHEATSHEET_AUTO_COMPILE=false
@@ -92,6 +90,7 @@ export ZSH_ACTIVE_CHEATSHEET_AUTO_COMPILE=false
 **Default**: `false`
 
 Enable debug output during compilation:
+
 ```bash
 # Enable debug mode
 export ZSH_ACTIVE_CHEATSHEET_DEBUG=true
@@ -101,6 +100,7 @@ export ZSH_ACTIVE_CHEATSHEET_DEBUG=true
 **Default**: `cat`
 
 Syntax highlighter for function preview in FZF:
+
 ```bash
 # Use bat/batcat for syntax highlighting
 export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="bat --language=sh --style=plain --color=always"
@@ -110,75 +110,34 @@ export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="batcat --language=sh --style=plain --c
 
 # Use highlight
 export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="highlight --syntax=bash --out-format=ansi"
-
-# Use pygmentize
-export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="pygmentize -l bash"
-
-# Use plain cat (no syntax highlighting)
-export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="cat"
 ```
 
-### Configuration Examples
+### Default Configuration
 
-#### Minimal Custom Setup
-```bash
-# ~/.zshrc
-export ZSH_ACTIVE_CHEATSHEET_DIRS=("$HOME/my-cheats")
-plugins=(... zsh-active-cheatsheet)
-```
+If no configuration is provided, the plugin uses these defaults:
 
-#### Advanced Custom Setup with Syntax Highlighting
-```bash
-# ~/.zshrc
-export ZSH_ACTIVE_CHEATSHEET_DIRS=(
-    "$HOME/dotfiles/shell-cheats"
-    "$HOME/work/team-cheats"
-    "$HOME/.local/share/personal-cheats"
-)
-export ZSH_ACTIVE_CHEATSHEET_IGNORE=("secrets" "draft" ".backup")
-export ZSH_ACTIVE_CHEATSHEET_DEBUG=true
-export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="bat --language=sh --style=plain --color=always"
+- **Directories**: `~/.config/aliases`, `~/.config/cheats`
+- **Auto-compile**: Enabled
+- **Debug**: Disabled
+- **Highlighter**: `cat` (no syntax highlighting)
+- **Ignore patterns**: Built-in defaults (`.git`, `node_modules`, etc.)
 
-plugins=(... zsh-active-cheatsheet)
-```
+## Dependencies
 
-#### Manual Compilation Mode
-```bash
-# ~/.zshrc
-export ZSH_ACTIVE_CHEATSHEET_DIRS=("$HOME/slow-network-drive/cheats")
-export ZSH_ACTIVE_CHEATSHEET_AUTO_COMPILE=false  # Don't slow startup
+### Required
+- `zsh`
+- `fzf` - For fuzzy finding interface
+- `jq` - For JSON processing
 
-plugins=(... zsh-active-cheatsheet)
+### Optional
+- `bat` or `batcat` - For syntax highlighting (can be configured via `ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER`)
+- `highlight` - Alternative syntax highlighter
+- `pygmentize` - Another syntax highlighter option
 
-# Manually compile when needed
-# zsh-active-cheatsheet-compile
-```
-
-#### Different Highlighter Options
-```bash
-# ~/.zshrc
-
-# Option 1: bat (if installed via Homebrew/most package managers)
-export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="bat --language=sh --style=plain --color=always"
-
-# Option 2: batcat (Ubuntu/Debian package name)
-export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="batcat --language=sh --style=plain --color=always"
-
-# Option 3: highlight package
-export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="highlight --syntax=bash --out-format=ansi --style=github"
-
-# Option 4: pygmentize (Python package)
-export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="pygmentize -l bash -f terminal"
-
-# Option 5: No highlighting (fastest)
-export ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER="cat"
-
-plugins=(... zsh-active-cheatsheet)
-```
 
 ## Creating Cheat Files
 
-The plugin scans your configured directories for cheat blocks using a simple format. Cheats can be embedded in existing configuration files (like `.zshrc`, `.tmux.conf`, or alias files) as comments, or created in dedicated cheat files.
+The plugin scans your configured directories for blocks of cheats metadata using a simple format. Cheats can be embedded in existing configuration files (like `.zshrc`, `.tmux.conf`, or alias files) as comments, or created in dedicated cheat files.
 
 ### Cheat Format
 
@@ -201,7 +160,7 @@ Short        Long list with hidden files
 - **Trigger**: What activates this command (keyboard shortcut, alias name, etc.)
 - **Domain**: Context where it's used (shell, tmux, vim, etc.)
 - **Function**: The actual command or code to execute
-- **Executable**: `yes` if it should run when selected, `no` for reference only
+- **Executable**: `yes` if it can run when selected, `no` for reference only
 
 ### Optional Fields
 
@@ -209,158 +168,151 @@ Short        Long list with hidden files
 - **Short**: Brief one-line summary
 - **Example**: Usage example or sample output
 
+### Pipe Patterns
+You create a cheat for multiple similar triggers using pipe patterns (`(string | string)`). This allows to create only one set of metadata for multiple triggers (like aliases or keybindings) that will be split up in to multiple cheat entries during compilation. The pipe pattern can be used in multiple cheat properties like `Trigger`, `Function`, and `Description` in order to highlight the differences between the triggers.
+
+```bash
+# Cheat
+# Type        alias
+# Trigger     (l | ll)
+# Domain      shell
+# Conditional no
+# Alternative None
+# Function    lsd (-1 | -l)
+# Description Lists non-hidden files and folder in the directory
+# Example     (l | ll)  + <Enter> -> outputs (simple | detailed) list of non-hidden items
+# Short       List non-hidden items
+# Executable  yes
+alias l='lsd -1'
+alias ll='lsd -l'
+```
+
+### Placeholders
+
+You can use placeholders (`<user-input>`) in the `Function` field to allow interactive editing when executing the command. This is useful for commands that require user input, like file paths or options.
+
+```bash
+# Cheat
+# Type         alias
+# Trigger      dlogs
+# Domain       docker
+# Conditional  no
+# Function     docker logs -f <container_name>
+# Executable   yes
+# Description  Follow logs for a Docker container (interactive container name)
+# Short        Docker logs (follow)
+alias dlogs='docker logs -f'
+```
+
 ### Examples
 
 #### Embedded in .zshrc file
+
 ```bash
 # Your existing .zshrc content
 export PATH="/usr/local/bin:$PATH"
 
 # Cheat
-Type         alias
-Trigger      la
-Domain       shell
-Function     ls -la
-Executable   yes
-Description  List all files including hidden ones in long format
-Short        List all files (long format)
-
+# Type         alias
+# Trigger      la
+# Domain       shell
+# Function     ls -la
+# Executable   yes
+# Description  List all files including hidden ones in long format
+# Short        List all files (long format)
 alias la='ls -la'
 
 # Cheat
-Type         function
-Trigger      mkcd
-Domain       shell
-Function     mkdir -p "$1" && cd "$1"
-Executable   yes
-Description  Create directory and change into it
-Short        Make and change directory
-Example      mkcd new-project
-
+# Type         function
+# Trigger      mkcd
+# Domain       shell
+# Function     mkdir -p "$1" && cd "$1"
+# Executable   yes
+# Description  Create directory and change into it
+# Short        Make and change directory
+# Example      mkcd new-project
 mkcd() {
     mkdir -p "$1" && cd "$1"
 }
 ```
 
 #### Embedded in .tmux.conf file
+
 ```bash
 # Your existing tmux config
 set -g mouse on
 
 # Cheat
-Type         bindkey
-Trigger      Ctrl+a c
-Domain       tmux
-Function     new-window
-Executable   no
-Description  Create a new tmux window
-Short        New window
-
+# Type         bindkey
+# Trigger      Ctrl+a c
+# Domain       tmux
+# Function     new-window
+# Executable   no
+# Description  Create a new tmux window
+# Short        New window
 bind c new-window
 
 # Cheat
-Type         bindkey
-Trigger      Ctrl+a |
-Domain       tmux
-Function     split-window -h
-Executable   yes
-Description  Split current pane horizontally
-Short        Horizontal split
-
+# Type         bindkey
+# Trigger      Ctrl+a |
+# Domain       tmux
+# Function     split-window -h
+# Executable   yes
+# Description  Split current pane horizontally
+# Short        Horizontal split
 bind | split-window -h
 ```
 
 #### Dedicated cheat file
-Create `~/.config/cheats/git-commands.txt`:
-```bash
-# Git Commands Cheat Sheet
 
-# Cheat
-Type         command
-Trigger      git-undo
-Domain       git
-Function     git reset --soft HEAD~1
-Executable   yes
-Description  Undo last commit but keep changes staged
-Short        Undo last commit (soft)
+Create `~/.config/cheats/misc`:
 
-# Cheat
-Type         command
-Trigger      git-branch-clean
-Domain       git
-Function     git branch --merged | grep -v "\*\|main\|master" | xargs -n 1 git branch -d
-Executable   yes
-Description  Delete all merged branches except main/master
-Short        Clean merged branches
-
-# Cheat
-Type         alias
-Trigger      gst
-Domain       git
-Function     git status --short
-Executable   yes
-Description  Show git status in short format
-Short        Git status (short)
-```
-
-#### Multiple alternatives with pipe patterns
 ```bash
 # Cheat
+Trigger      Ctrl + a
 Type         bindkey
-Trigger      (Ctrl+a h | Ctrl+a Left)
-Domain       tmux
-Function     select-pane -L
-Executable   yes
-Description  Move to left pane
-Short        Move left
-
-# This creates two entries:
-# 1. Trigger: "Ctrl+a h", Function: "select-pane -L"
-# 2. Trigger: "Ctrl+a Left", Function: "select-pane -L"
-```
-
-#### Reference-only cheats
-```bash
-# Cheat
-Type         reference
-Trigger      docker-logs
-Domain       docker
-Function     docker logs -f <container_name>
+Domain       shell
+Conditional  no
+Alternative  Home
+Function     beginning-of-line
+Description  Move cursor (|) to beginning of command line.
+Example      echo | test → <Ctrl+E> → | echo test
+Short        Move to line start
 Executable   no
-Description  Follow logs for a Docker container
-Short        Follow container logs
-Example      docker logs -f my-app
+
+# Cheat
+Trigger      Ctrl + l
+Type         bindkey
+Domain       shell
+Conditional  no
+Alternative  clear (cmd)
+Function     clear-screen
+Description  Clears the screen like `clear`.
+Example      <Ctrl+L> → screen is cleared
+Short        Clear screen
+Executable   yes
+
+# Cheat
+Trigger      Ctrl + r
+Type         bindkey
+Domain       shell (fzf)
+Conditional  no
+Alternative  None
+Function     history-incremental-search-backward
+Description  Interactive reverse fuzzy search in history using FZF.
+Example      echo | → <Ctrl+R> → shows previous that includes 'echo'
+Short        Fuzzy search history
+Executable   yes
 ```
-
-### File Organization
-
-**Option 1: Mixed with existing files**
-- Add cheats as comments in `.zshrc`, `.tmux.conf`, etc.
-- Keeps related commands near their definitions
-
-**Option 2: Dedicated cheat files**
-- Create separate files in your cheat directories
-- Better for large collections or shared team cheats
-- Use `.txt` or `.md` extensions
-
-**Option 3: Organized by category**
-```
-~/.config/cheats/
-├── git-commands.txt
-├── docker-commands.txt
-├── kubernetes.txt
-├── shell-aliases.txt
-└── tmux-bindings.txt
-```
-
-The compiler automatically finds and processes all cheat blocks regardless of file type or location within your configured directories.
 
 ## Usage
 
 ### Manual Compilation
 
 When auto-compilation is disabled or you want to refresh:
+
 ```bash
+
 # Compile with current configuration
 zsh-active-cheatsheet-compile
 
@@ -371,64 +323,8 @@ zsh-active-cheatsheet-compile
     /path/to/cheats2
 ```
 
-### Workflow Examples
+Better yet, make it an alias in your `.zshrc`:
 
-#### Example 1: Personal + Work Cheats
 ```bash
-# ~/.zshrc configuration
-export ZSH_ACTIVE_CHEATSHEET_DIRS=(
-    "$HOME/.config/personal-cheats"
-    "$HOME/work/team-cheats"
-    "$HOME/work/project-specific-cheats"
-)
-export ZSH_ACTIVE_CHEATSHEET_IGNORE=("confidential" "wip")
-
-plugins=(... zsh-active-cheatsheet)
+alias mkcheats='~/.config/zsh/plugins/zsh-active-cheatsheet/cheats-compiler.sh /path/to/cheats1 /path/to/cheats2'
 ```
-
-#### Example 2: Dotfiles Integration
-```bash
-# ~/.zshrc configuration
-export ZSH_ACTIVE_CHEATSHEET_DIRS=(
-    "$HOME/dotfiles/zsh/cheats"
-    "$HOME/dotfiles/tmux/cheats"
-    "$HOME/dotfiles/vim/cheats"
-)
-
-plugins=(... zsh-active-cheatsheet)
-```
-
-#### Example 3: Team Shared Cheats
-```bash
-# ~/.zshrc configuration
-export ZSH_ACTIVE_CHEATSHEET_DIRS=(
-    "$HOME/.config/cheats"              # personal
-    "/shared/team/dev-cheats"            # team shared
-    "$HOME/projects/current/docs/cheats" # project specific
-)
-export ZSH_ACTIVE_CHEATSHEET_IGNORE=("draft" "old")
-
-plugins=(... zsh-active-cheatsheet)
-```
-
-## Default Configuration
-
-If no configuration is provided, the plugin uses these defaults:
-
-- **Directories**: `~/.config/aliases`, `~/.config/cheats`
-- **Auto-compile**: Enabled
-- **Debug**: Disabled
-- **Highlighter**: `cat` (no syntax highlighting)
-- **Ignore patterns**: Built-in defaults (`.git`, `node_modules`, etc.)
-
-## Dependencies
-
-### Required
-- `zsh`
-- `fzf` - For fuzzy finding interface
-- `jq` - For JSON processing
-
-### Optional
-- `bat` or `batcat` - For syntax highlighting (can be configured via `ZSH_ACTIVE_CHEATSHEET_HIGHLIGHTER`)
-- `highlight` - Alternative syntax highlighter
-- `pygmentize` - Another syntax highlighter option
